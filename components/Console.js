@@ -244,7 +244,17 @@ export default function Console() {
               <div
                 className={`task${current.done[t.id] ? ' on' : ''}`}
                 key={t.id}
+                role="checkbox"
+                aria-checked={!!current.done[t.id]}
+                aria-label={t.label}
+                tabIndex={0}
                 onClick={() => toggle(t.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggle(t.id);
+                  }
+                }}
               >
                 <span className="box">{current.done[t.id] ? '✓' : ''}</span>
                 <span className="label">{t.label}</span>
