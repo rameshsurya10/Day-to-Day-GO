@@ -28,7 +28,7 @@ const VERDICTS = {
   STANDARD: ['STANDARD DAY', 'Baseline cleared. Consistent, sustainable output — exactly the target.'],
   PEAK:     ['PEAK DAY', 'Full output logged. Bonus tier reached — do not make this the new minimum.'],
 };
-const STATUS_COLOR = { BROKEN: 'var(--red)', SURVIVED: 'var(--green)', STANDARD: 'var(--yellow)', PEAK: 'var(--amber)' };
+const STATUS_COLOR = { BROKEN: 'var(--ash)', SURVIVED: 'var(--red-3)', STANDARD: 'var(--red-2)', PEAK: 'var(--red)' };
 
 const COACH_MODES = [
   { id: 'daily',    label: 'DAILY FEEDBACK' },
@@ -304,10 +304,10 @@ export default function Console() {
           ))}
         </div>
         <div className="legend">
-          <span><i style={{ background: 'var(--red)' }} />BROKEN — Level 1 missed</span>
-          <span><i style={{ background: 'var(--green)' }} />SURVIVED — minimum met</span>
-          <span><i style={{ background: 'var(--yellow)' }} />STANDARD — baseline cleared</span>
-          <span><i style={{ background: 'var(--amber)' }} />PEAK — full output</span>
+          <span><i style={{ background: 'var(--ash)' }} />BROKEN — Level 1 missed</span>
+          <span><i style={{ background: 'var(--red-3)' }} />SURVIVED — minimum met</span>
+          <span><i style={{ background: 'var(--red-2)' }} />STANDARD — baseline cleared</span>
+          <span><i style={{ background: 'var(--red)' }} />PEAK — full output</span>
         </div>
       </section>
 
