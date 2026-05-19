@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#0a0b0a" />
+<title>DAY//TO//DAY — Operator Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     DAY//TO//DAY — single-file daily achievement console.
+     No build step, no server, no account. Open in any browser.
+     Progress is saved to this device via localStorage.
+     ============================================================ */
+
+  :root {
+    --bg:      #0a0b0a;
+    --panel:   #121310;
+    --panel-2: #0f100d;
+    --ink:     #e9e4d4;
+    --dim:     #7d7b6a;
+    --faint:   #4a4940;
+    --amber:   #e8a33d;
+    --green:   #6fcf73;
+    --yellow:  #e6c34a;
+    --red:     #e2604a;
+    --line:    #272820;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { background: var(--bg); }
+
+  body {
+    font-family: 'Space Mono', ui-monospace, monospace;
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 28px 18px 60px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(232,163,61,0.07), transparent 70%),
+      repeating-linear-gradient(0deg, transparent 0 3px, rgba(0,0,0,0.22) 3px 4px);
+  }
+
+  .wrap { max-width: 760px; margin: 0 auto; }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px 16px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 14px;
+  }
+  .brand { font-size: 19px; font-weight: 700; letter-spacing: 2px; }
+  .brand b { color: var(--amber); }
+  .brand .tag {
+    display: block; font-size: 9.5px; font-weight: 400;
+    letter-spacing: 3.5px; color: var(--dim); margin-top: 3px;
+  }
+  .clock { text-align: right; font-size: 11px; color: var(--dim); letter-spacing: 1px; }
+  .clock .t { color: var(--ink); font-size: 13px; }
+  .clock .now { color: var(--amber); display: block; margin-top: 2px; }
+
+  /* ---------- warning banner ---------- */
+  .alert {
+    margin-top: 16px; padding: 10px 14px;
+    border: 1px solid var(--red);
+    background: rgba(226,96,74,0.08);
+    color: var(--red); font-size: 11.5px; letter-spacing: 0.6px;
+    display: none;
+  }
+  .alert.on { display: block; }
+
+  /* ---------- stat row ---------- */
+  .stats {
+    margin-top: 18px; display: grid;
+    grid-template-columns: 1fr 1.3fr 1fr; gap: 10px;
+  }
+  .stat {
+    border: 1px solid var(--line); background: var(--panel);
+    padding: 14px 14px 12px; position: relative;
+  }
+  .stat .k { font-size: 9px; letter-spacing: 2.5px; color: var(--dim); }
+  .stat .v { font-size: 30px; font-weight: 700; margin-top: 6px; line-height: 1; }
+  .stat .v small { font-size: 13px; color: var(--dim); font-weight: 400; }
+  .stat.score .v { color: var(--amber); }
+  #dayStatus.v { font-size: 17px; padding-top: 8px; }
+
+  .bar { height: 4px; background: var(--panel-2); margin-top: 11px; overflow: hidden; }
+  .bar > i {
+    display: block; height: 100%; width: 0%;
+    background: var(--amber);
+    transition: width .55s cubic-bezier(.2,.8,.2,1);
+  }
+
+  .verdict { margin-top: 12px; font-size: 11.5px; letter-spacing: .5px; color: var(--dim); }
+  .verdict b { color: var(--ink); }
+
+  /* ---------- level panels ---------- */
+  .panel {
+    margin-top: 16px; border: 1px solid var(--line);
+    background: var(--panel);
+    animation: rise .5s both;
+  }
+  .panel:nth-of-type(1) { animation-delay: .05s; }
+  .panel:nth-of-type(2) { animation-delay: .12s; }
+  .panel:nth-of-type(3) { animation-delay: .19s; }
+  @keyframes rise { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform:none; } }
+
+  .phead {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-bottom: 1px solid var(--line);
+    background: var(--panel-2);
+  }
+  .dot { width: 9px; height: 9px; flex: none; }
+  .l1 .dot { background: var(--green);  box-shadow: 0 0 8px var(--green); }
+  .l2 .dot { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); }
+  .l3 .dot { background: var(--red);    box-shadow: 0 0 8px var(--red); }
+  .phead .num { font-size: 11px; color: var(--dim); letter-spacing: 1.5px; }
+  .phead .name { font-size: 12.5px; font-weight: 700; letter-spacing: 1.5px; }
+  .phead .secured {
+    margin-left: auto; font-size: 9.5px; letter-spacing: 1.5px;
+    color: var(--faint); border: 1px solid var(--line); padding: 3px 7px;
+  }
+  .panel.done .phead .secured { color: var(--bg); border-color: transparent; }
+  .l1.done .phead .secured { background: var(--green); }
+  .l2.done .phead .secured { background: var(--yellow); }
+  .l3.done .phead .secured { background: var(--red); }
+
+  .sub { padding: 5px 14px 9px; font-size: 10px; color: var(--dim); border-bottom: 1px dashed var(--line); }
+
+  /* ---------- task rows ---------- */
+  .task {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px; cursor: pointer;
+    border-bottom: 1px solid var(--panel-2);
+    user-select: none; transition: background .15s;
+  }
+  .task:last-child { border-bottom: none; }
+  .task:hover { background: var(--panel-2); }
+
+  .box {
+    width: 21px; height: 21px; flex: none;
+    border: 1px solid var(--faint);
+    display: grid; place-items: center;
+    font-size: 12px; color: var(--bg); transition: all .15s;
+  }
+  .l1 .task.on .box { background: var(--green);  border-color: var(--green); }
+  .l2 .task.on .box { background: var(--yellow); border-color: var(--yellow); }
+  .l3 .task.on .box { background: var(--red);    border-color: var(--red); }
+  .box::after { content: ''; }
+  .task.on .box::after { content: '\2713'; }
+
+  .label { flex: 1; font-size: 13px; }
+  .task.on .label { color: var(--dim); text-decoration: line-through; text-decoration-color: var(--faint); }
+
+  .w { font-size: 10px; color: var(--faint); letter-spacing: .5px; }
+  .task.on .w { color: var(--dim); }
+
+  /* ---------- history grid ---------- */
+  .hist { margin-top: 22px; }
+  .hist h3 { font-size: 10px; letter-spacing: 2.5px; color: var(--dim); margin-bottom: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 5px; }
+  .cell {
+    aspect-ratio: 1; background: var(--panel);
+    border: 1px solid var(--line);
+  }
+  .cell[data-s="BROKEN"]   { background: var(--red);    border-color: var(--red); }
+  .cell[data-s="SURVIVED"] { background: var(--green);  border-color: var(--green); }
+  .cell[data-s="STANDARD"] { background: var(--yellow); border-color: var(--yellow); }
+  .cell[data-s="PEAK"]     { background: var(--amber);  border-color: var(--amber);
+                             box-shadow: 0 0 7px rgba(232,163,61,.6); }
+  .cell.today { outline: 1px solid var(--ink); outline-offset: 1px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; font-size: 9.5px; color: var(--dim); }
+  .legend span { display: flex; align-items: center; gap: 6px; }
+  .legend i { width: 9px; height: 9px; display: inline-block; }
+
+  /* ---------- rules footer ---------- */
+  .rules {
+    margin-top: 24px; border: 1px solid var(--line);
+    background: var(--panel); padding: 14px;
+  }
+  .rules h3 { font-size: 10px; letter-spacing: 2.5px; color: var(--amber); margin-bottom: 9px; }
+  .rules li { list-style: none; font-size: 11.5px; color: var(--dim); padding: 3px 0; }
+  .rules li::before { content: '\203A  '; color: var(--amber); }
+
+  footer {
+    margin-top: 26px; text-align: center;
+    font-size: 9.5px; color: var(--faint); letter-spacing: 1px;
+  }
+
+  @media (max-width: 540px) {
+    .stats { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: repeat(10, 1fr); }
+    .stat .v { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      DAY<b>//</b>TO<b>//</b>DAY
+      <span class="tag">OPERATOR CONSOLE / DOUBLE-SHIFT PROTOCOL</span>
+    </div>
+    <div class="clock">
+      <span id="date">—</span><br />
+      <span class="t" id="time">--:--:--</span>
+      <span class="now" id="block">—</span>
+    </div>
+  </header>
+
+  <div class="alert" id="alert">RULE BREACH RISK &mdash; system broke 2 days running. Run Level 1 today, no exceptions.</div>
+
+  <section class="stats">
+    <div class="stat">
+      <div class="k">STREAK</div>
+      <div class="v"><span id="streak">0</span><small> days</small></div>
+    </div>
+    <div class="stat score">
+      <div class="k">TODAY SCORE</div>
+      <div class="v"><span id="score">0</span><small> / 100</small></div>
+      <div class="bar"><i id="scoreBar"></i></div>
+    </div>
+    <div class="stat">
+      <div class="k">DAY STATUS</div>
+      <div class="v" id="dayStatus">&mdash;</div>
+    </div>
+  </section>
+
+  <div class="verdict" id="verdict">Log your first task to bring the system online.</div>
+
+  <!-- Level panels are rendered by JS into #panels -->
+  <div id="panels"></div>
+
+  <section class="hist">
+    <h3>LAST 30 DAYS &mdash; SYSTEM LOG</h3>
+    <div class="grid" id="grid"></div>
+    <div class="legend">
+      <span><i style="background:var(--red)"></i>BROKEN &mdash; Level 1 missed</span>
+      <span><i style="background:var(--green)"></i>SURVIVED &mdash; minimum met</span>
+      <span><i style="background:var(--yellow)"></i>STANDARD &mdash; baseline cleared</span>
+      <span><i style="background:var(--amber)"></i>PEAK &mdash; full output</span>
+    </div>
+  </section>
+
+  <section class="rules">
+    <h3>GOLDEN RULES</h3>
+    <ul>
+      <li>Never skip 2 days in a row.</li>
+      <li>Reduce effort, never remove the habit.</li>
+      <li>Bad day = clear Level 1 only. The streak still survives.</li>
+      <li>Protect sleep like an asset. No scrolling after 10 PM.</li>
+      <li>No "I'll compensate tomorrow" mindset.</li>
+    </ul>
+  </section>
+
+  <footer>
+    SAVED LOCALLY ON THIS DEVICE &middot; AMATEURS BUILD PLANS, OPERATORS BUILD SYSTEMS
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+/* =================================================================
+   CONFIG  ----------------------------------------------------------
+   This is the one block worth tuning to your own judgement.
+   Each task carries a WEIGHT. The weights below are calibrated so:
+     - All 4 Level-1 tasks done  ->  60 pts  (the survival floor)
+     - All 5 Level-2 tasks done  -> +30 pts  (baseline = 90)
+     - All 4 Level-3 tasks done  -> +10 pts  (peak     = 100)
+   Change a number if a task deserves more or less weight to you.
+   ================================================================= */
+  const TASKS = {
+    l1: {
+      name: 'NON-NEGOTIABLE', sub: 'Even on the worst day, these four still happen.',
+      items: [
+        { id:'l1_class_am',    label:'05:30 trading class — attended live', w:15 },
+        { id:'l1_workout_min', label:'Workout — 10 minutes minimum',        w:15 },
+        { id:'l1_focus',       label:'30 min coding OR trading study',      w:15 },
+        { id:'l1_sleep',       label:'Slept on time the night before',      w:15 },
+      ]
+    },
+    l2: {
+      name: 'STANDARD', sub: 'Your normal daily baseline.',
+      items: [
+        { id:'l2_workout_full',label:'Full workout — 20–30 minutes',        w:6 },
+        { id:'l2_coding',      label:'45 min coding block (billing / bot)', w:6 },
+        { id:'l2_class_pm',    label:'21:30 trading class — attended live', w:6 },
+        { id:'l2_family',      label:'Family time / calls',                 w:6 },
+        { id:'l2_screen',      label:'Instagram under 20 minutes',          w:6 },
+      ]
+    },
+    l3: {
+      name: 'HIGH PERFORMANCE', sub: 'Bonus. Logged when energy is high — never expected.',
+      items: [
+        { id:'l3_coding_deep',  label:'60–90 min deep coding',       w:2.5 },
+        { id:'l3_backtest',     label:'Trading backtesting session', w:2.5 },
+        { id:'l3_learning',     label:'Extra learning block',        w:2.5 },
+        { id:'l3_workout_long', label:'Longer / harder workout',     w:2.5 },
+      ]
+    }
+  };
+
+  // Fixed schedule (Mon-Fri) used only for the "NOW" indicator. [startMinutes, label]
+  const SCHEDULE = [
+    [320,'WAKE UP'], [330,'TRADING CLASS — AM'], [390,'WORKOUT'],
+    [420,'RECOVERY SLEEP'], [480,'READY + BREAKFAST'], [570,'COMMUTE'],
+    [600,'OFFICE — ENERGY GUARD'], [1170,'RESET / WALK'], [1200,'DINNER'],
+    [1230,'CODING BLOCK'], [1290,'TRADING CLASS — PM'], [1350,'FAMILY TIME'],
+    [1380,'LIGHT REVIEW'], [1410,'WIND DOWN — SLEEP']
+  ];
+
+  const STORE_KEY = 'd2d.v1';
+  const $ = (id) => document.getElementById(id);
+
+  // Safe DOM builder — no innerHTML, so untrusted text can never become markup.
+  function mk(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+/* =================================================================
+   STATE  -----------------------------------------------------------
+   ================================================================= */
+  function todayStr(d) {
+    d = d || new Date();
+    return d.getFullYear() + '-' +
+      String(d.getMonth()+1).padStart(2,'0') + '-' +
+      String(d.getDate()).padStart(2,'0');
+  }
+
+  function blankDay() { return { date: todayStr(), done: {} }; }
+
+  function load() {
+    let s;
+    try { s = JSON.parse(localStorage.getItem(STORE_KEY)); }
+    catch (e) { s = null; }
+    if (!s || !s.current) s = { current: blankDay(), history: [] };
+    if (!Array.isArray(s.history)) s.history = [];
+    return s;
+  }
+
+  function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+
+  let state = load();
+
+/* =================================================================
+   SCORING ENGINE  --------------------------------------------------
+   This function encodes the anti-break philosophy:
+   a day is only BROKEN when Level 1 is incomplete - nothing else
+   can save it, and nothing else is needed to survive.
+   ================================================================= */
+  function summarize(done) {
+    let score = 0;
+    const levelDone = {};
+    for (const lvl of ['l1','l2','l3']) {
+      let allDone = true;
+      for (const t of TASKS[lvl].items) {
+        if (done[t.id]) score += t.w;
+        else allDone = false;
+      }
+      levelDone[lvl] = allDone;
+    }
+    let status;
+    if (!levelDone.l1)      status = 'BROKEN';   // system did not survive
+    else if (!levelDone.l2) status = 'SURVIVED'; // minimum guarantee met
+    else if (!levelDone.l3) status = 'STANDARD'; // baseline cleared
+    else                    status = 'PEAK';     // full output
+    return { score: Math.round(score), status, levelDone };
+  }
+
+  // Streak = consecutive days (ending today, or yesterday if today not yet
+  // secured) where the system did NOT break.
+  function computeStreak() {
+    const map = {};
+    for (const h of state.history) map[h.date] = h.status;
+    const live = summarize(state.current.done);
+    map[state.current.date] = live.status;
+
+    let count = 0;
+    const cur = new Date();
+    // If today is not secured yet, start counting from yesterday instead.
+    if (map[todayStr(cur)] === 'BROKEN') cur.setDate(cur.getDate() - 1);
+    while (true) {
+      const key = todayStr(cur);
+      const st = map[key];
+      if (!st || st === 'BROKEN') break;
+      count++;
+      cur.setDate(cur.getDate() - 1);
+    }
+    return count;
+  }
+
+  // Warn when the two most recent completed days both broke.
+  function breachRisk() {
+    const past = state.history
+      .filter(h => h.date !== state.current.date)
+      .sort((a,b) => a.date < b.date ? 1 : -1);
+    return past.length >= 2 && past[0].status === 'BROKEN' && past[1].status === 'BROKEN';
+  }
+
+/* =================================================================
+   DAY ROLLOVER  ----------------------------------------------------
+   ================================================================= */
+  function rollover() {
+    const t = todayStr();
+    if (state.current.date === t) return;
+    // Archive the day that just ended.
+    const s = summarize(state.current.done);
+    state.history = state.history.filter(h => h.date !== state.current.date);
+    state.history.push({ date: state.current.date, status: s.status, score: s.score });
+    // Keep the log lean.
+    state.history = state.history
+      .sort((a,b) => a.date < b.date ? -1 : 1)
+      .slice(-120);
+    state.current = blankDay();
+    save();
+  }
+
+/* =================================================================
+   RENDER  ----------------------------------------------------------
+   ================================================================= */
+  const VERDICTS = {
+    BROKEN:   ['SYSTEM BROKEN', 'Level 1 incomplete. Clear the four non-negotiables before sleep — the day is still recoverable.'],
+    SURVIVED: ['SYSTEM SECURED', 'Minimum guarantee met. The streak holds. This is a win, even on a bad day.'],
+    STANDARD: ['STANDARD DAY',  'Baseline cleared. Consistent, sustainable output — exactly the target.'],
+    PEAK:     ['PEAK DAY',      'Full output logged. Bonus tier reached — do not make this the new minimum.'],
+  };
+  const STATUS_COLOR = { BROKEN:'var(--red)', SURVIVED:'var(--green)', STANDARD:'var(--yellow)', PEAK:'var(--amber)' };
+
+  function buildPanels() {
+    const host = $('panels');
+    host.replaceChildren();
+    ['l1','l2','l3'].forEach((lvl, i) => {
+      const cfg = TASKS[lvl];
+      const sec = mk('section', 'panel ' + lvl);
+      sec.dataset.lvl = lvl;
+
+      const phead = mk('div', 'phead');
+      phead.appendChild(mk('span', 'dot'));
+      phead.appendChild(mk('span', 'num', 'LEVEL 0' + (i+1)));
+      phead.appendChild(mk('span', 'name', cfg.name));
+      phead.appendChild(mk('span', 'secured', 'SECURED'));
+      sec.appendChild(phead);
+
+      sec.appendChild(mk('div', 'sub', cfg.sub));
+
+      cfg.items.forEach(t => {
+        const row = mk('div', 'task');
+        row.dataset.id = t.id;
+        row.appendChild(mk('span', 'box'));
+        row.appendChild(mk('span', 'label', t.label));
+        row.appendChild(mk('span', 'w', '+' + t.w));
+        row.addEventListener('click', () => toggle(t.id));
+        sec.appendChild(row);
+      });
+      host.appendChild(sec);
+    });
+  }
+
+  function toggle(id) {
+    state.current.done[id] = !state.current.done[id];
+    save();
+    render();
+  }
+
+  function render() {
+    const s = summarize(state.current.done);
+
+    // task + level visual state
+    document.querySelectorAll('.task').forEach(el => {
+      el.classList.toggle('on', !!state.current.done[el.dataset.id]);
+    });
+    document.querySelectorAll('.panel').forEach(p => {
+      p.classList.toggle('done', s.levelDone[p.dataset.lvl]);
+    });
+
+    // stats
+    $('score').textContent = s.score;
+    $('scoreBar').style.width = s.score + '%';
+    $('streak').textContent = computeStreak();
+
+    const ds = $('dayStatus');
+    ds.textContent = s.status;
+    ds.style.color = STATUS_COLOR[s.status];
+
+    const v = VERDICTS[s.status];
+    const verdict = $('verdict');
+    verdict.replaceChildren();
+    verdict.appendChild(mk('b', null, v[0] + '.'));
+    verdict.appendChild(document.createTextNode(' ' + v[1]));
+
+    $('alert').classList.toggle('on', breachRisk());
+
+    renderGrid();
+  }
+
+  function renderGrid() {
+    const grid = $('grid');
+    grid.replaceChildren();
+    const map = {};
+    for (const h of state.history) map[h.date] = h.status;
+    const liveToday = summarize(state.current.done).status;
+    const tStr = todayStr();
+
+    const d = new Date();
+    d.setDate(d.getDate() - 29);
+    for (let i = 0; i < 30; i++) {
+      const key = todayStr(d);
+      const cell = mk('div', 'cell');
+      const st = key === tStr ? liveToday : map[key];
+      if (st) cell.dataset.s = st;
+      if (key === tStr) cell.classList.add('today');
+      cell.title = key + (st ? ' — ' + st : ' — no data');
+      grid.appendChild(cell);
+      d.setDate(d.getDate() + 1);
+    }
+  }
+
+/* =================================================================
+   CLOCK  -----------------------------------------------------------
+   ================================================================= */
+  function currentBlock(now) {
+    const dow = now.getDay();
+    if (dow === 0 || dow === 6) return 'WEEKEND — PHASE 2 PREP';
+    const mins = now.getHours() * 60 + now.getMinutes();
+    let label = SCHEDULE[SCHEDULE.length - 1][1];
+    for (const [start, name] of SCHEDULE) {
+      if (mins >= start) label = name; else break;
+    }
+    return 'NOW: ' + label;
+  }
+
+  function tick() {
+    const now = new Date();
+    $('date').textContent = now.toLocaleDateString(undefined,
+      { weekday:'short', day:'2-digit', month:'short', year:'numeric' }).toUpperCase();
+    $('time').textContent = now.toLocaleTimeString(undefined, { hour12:false });
+    $('block').textContent = currentBlock(now);
+    if (todayStr(now) !== state.current.date) { rollover(); buildPanels(); render(); }
+  }
+
+/* =================================================================
+   BOOT  ------------------------------------------------------------
+   ================================================================= */
+  rollover();
+  buildPanels();
+  render();
+  tick();
+  setInterval(tick, 1000);
+</script>
+</body>
+</html>

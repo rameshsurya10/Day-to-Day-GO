@@ -1,0 +1,17 @@
+{
+  "name": "day-to-day-go",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "@ai-sdk/cerebras": "^2.0.51",
+    "ai": "^6.0.185",
+    "next": "15.5.18",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
+}
