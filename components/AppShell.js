@@ -17,6 +17,7 @@ import MoneyView, { MONEY_SECTIONS } from '@/components/MoneyView';
 import BuddyView from '@/components/BuddyView';
 import AlertsPanel from '@/components/AlertsPanel';
 import SettingsView from '@/components/SettingsView';
+import InstallPopup from '@/components/InstallPopup';
 import { useRoutineStore } from '@/components/useRoutineStore';
 import { useAlertNotifier, useServiceWorker, useInstallPrompt } from '@/components/usePwa';
 import { todayStr } from '@/lib/tracker';
@@ -144,25 +145,6 @@ export default function AppShell() {
       <main className="content" id="main">
         {tab === 'today' && (
           <>
-            {!state.installDismissed && (installer.mode === 'prompt' || installer.mode === 'ios') && (
-              <section className="glass install-card">
-                <img src="/icons/icon-192.png" alt="" width="48" height="48" />
-                <div className="now-body">
-                  <h3>Install Day to Day</h3>
-                  <p className="muted small">
-                    {installer.mode === 'ios'
-                      ? 'Tap Share, then “Add to Home Screen” — it opens full-screen like an app.'
-                      : 'Add it to your home screen — full-screen, faster, with reminders.'}
-                  </p>
-                  <div className="btn-row">
-                    <button type="button" className="btn btn-ghost" onClick={store.dismissInstall}>Not now</button>
-                    {installer.mode === 'prompt' && (
-                      <button type="button" className="btn btn-primary" onClick={installer.install}>Install</button>
-                    )}
-                  </div>
-                </div>
-              </section>
-            )}
             {state.plan.isTemplate && (
               <section className="glass install-card">
                 <span className="now-icon"><Icon name="gear" size={22} /></span>
@@ -219,6 +201,13 @@ export default function AppShell() {
           </button>
         ))}
       </nav>
+
+      <InstallPopup
+        installer={installer}
+        snoozedUntil={state.installSnoozeUntil}
+        today={today}
+        onSnooze={store.snoozeInstall}
+      />
 
       {alertsOpen && (
         <AlertsPanel

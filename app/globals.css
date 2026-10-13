@@ -602,10 +602,30 @@ h3 { font-size: 17px; line-height: 1.3; font-weight: 700; }
 .pay-form { display: flex; flex-direction: column; gap: 10px; }
 .empty { padding: 18px; text-align: center; }
 
-/* ---------- PWA install card ---------- */
+/* ---------- "make it yours" card (Today) ---------- */
 .install-card { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 14px; }
-.install-card img { flex-shrink: 0; border-radius: 12px; }
 .install-card .btn-row { margin: 12px 0 0; }
+
+/* ---------- PWA install pop-up (mobile) ---------- */
+.install-pop {
+  position: fixed; z-index: 30;
+  left: 50%; transform: translateX(-50%);
+  bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 20px);
+  width: calc(100% - 2 * var(--gutter)); max-width: 440px;
+  display: flex; gap: 12px; align-items: flex-start; padding: 14px 14px 12px;
+  background: var(--glass-strong); box-shadow: 0 16px 48px rgba(15, 76, 70, 0.22);
+  animation: pop-up 260ms var(--ease);
+}
+@keyframes pop-up { from { opacity: 0; transform: translate(-50%, 16px); } }
+.install-pop img { flex-shrink: 0; border-radius: 11px; }
+.install-pop-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding-right: 24px; }
+.install-pop-actions { display: flex; gap: 8px; margin-top: 10px; }
+.install-pop-actions .btn { flex: 1; }
+.install-pop-close { position: absolute; top: 4px; right: 4px; }
+.ios-share {
+  display: inline-grid; place-items: center; width: 20px; height: 20px; vertical-align: -5px;
+  border-radius: 5px; background: var(--accent-soft); color: var(--accent);
+}
 
 /* ---------- header bell ---------- */
 .topbar-actions { display: flex; gap: 8px; }

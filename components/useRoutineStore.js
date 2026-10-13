@@ -11,7 +11,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { todayStr, addDays } from '@/lib/tracker';
-import { AUTO_SPEND, STORE_KEY, APP_ID, BACKUP_VERSION } from '@/lib/constants';
+import { AUTO_SPEND, STORE_KEY, APP_ID, BACKUP_VERSION, INSTALL_SNOOZE_DAYS } from '@/lib/constants';
 import { normalizePlan } from '@/lib/plan';
 import { PLAN_TEMPLATE } from '@/lib/planTemplate';
 
@@ -44,7 +44,7 @@ function freshState(today) {
   return {
     programStart: today, days: {}, weeks: {}, chat: [], expenses: {}, budget: null, customCats: [],
     loans: [], ious: [], alertPrefs: DEFAULT_ALERT_PREFS, alertSeen: [], alertNotified: [],
-    installDismissed: false, lastBackup: null, plan: structuredClone(PLAN_TEMPLATE),
+    installSnoozeUntil: null, lastBackup: null, plan: structuredClone(PLAN_TEMPLATE),
   };
 }
 
@@ -65,7 +65,7 @@ function cleanState(s) {
     alertPrefs: { ...DEFAULT_ALERT_PREFS, ...obj(s.alertPrefs) },
     alertSeen: arr(s.alertSeen),
     alertNotified: arr(s.alertNotified),
-    installDismissed: s.installDismissed === true,
+    installSnoozeUntil: typeof s.installSnoozeUntil === 'string' && DATE_RE.test(s.installSnoozeUntil) ? s.installSnoozeUntil : null,
     customCats: Array.isArray(s.customCats)
       ? s.customCats.filter((c) => c && typeof c.id === 'string' && typeof c.label === 'string')
       : [],
@@ -266,8 +266,9 @@ export function useRoutineStore() {
   const markAlertsSeen = useCallback((ids) => markAlerts('alertSeen', ids), [markAlerts]);
   const markAlertsNotified = useCallback((ids) => markAlerts('alertNotified', ids), [markAlerts]);
 
-  const dismissInstall = useCallback(() => {
-    setState((s) => ({ ...s, installDismissed: true }));
+  /* "Not now" on the install pop-up: hide it for a while. */
+  const snoozeInstall = useCallback(() => {
+    setState((s) => ({ ...s, installSnoozeUntil: addDays(todayStr(), INSTALL_SNOOZE_DAYS) }));
   }, []);
 
   /* ---- plan (Settings) ---- */
@@ -329,7 +330,7 @@ export function useRoutineStore() {
     addExpense, removeExpense, setBudget, addCategory, removeCategory,
     addLoan, removeLoan, toggleLoanPaid, addIou, removeIou, payIou, undoIouPayment,
     setAlertPrefs,
-    markAlertsSeen, markAlertsNotified, dismissInstall,
+    markAlertsSeen, markAlertsNotified, snoozeInstall,
   };
 }
 

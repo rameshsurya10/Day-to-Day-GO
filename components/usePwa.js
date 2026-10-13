@@ -36,6 +36,10 @@ export function useAlertNotifier(alerts, enabled, notifiedIds, markNotified) {
   }, [alerts, enabled, notifiedIds, markNotified]);
 }
 
+/* Phones and tablets: touch-first screens or a mobile user agent. */
+const isMobile = () =>
+  window.matchMedia('(pointer: coarse)').matches || /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent);
+
 const isStandalone = () =>
   window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
@@ -44,8 +48,10 @@ const isStandalone = () =>
 export function useInstallPrompt() {
   const [deferred, setDeferred] = useState(null);
   const [mode, setMode] = useState('none');
+  const [mobile, setMobile] = useState(false);
 
   useEffect(() => {
+    setMobile(isMobile());
     if (isStandalone()) { setMode('installed'); return undefined; }
     if (/iphone|ipad|ipod/i.test(navigator.userAgent)) setMode('ios');
     const onPrompt = (e) => { e.preventDefault(); setDeferred(e); setMode('prompt'); };
@@ -66,5 +72,5 @@ export function useInstallPrompt() {
     if (outcome === 'accepted') setMode('installed');
   }, [deferred]);
 
-  return { mode, install };
+  return { mode, install, mobile };
 }
