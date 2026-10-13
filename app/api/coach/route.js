@@ -28,7 +28,11 @@ const MAX_MESSAGE_CHARS = 2000;
 const MAX_DAYS = 28;
 const MAX_WEEKS = 4;
 const MODEL_TIMEOUT_MS = 45000;
-const MAX_OUTPUT_TOKENS = 2000;   // reasoning models count thinking toward this
+const MAX_OUTPUT_TOKENS = 4000;   // reasoning models count their thinking toward this
+const MODEL_RETRIES = 2;          // retries on temporary provider errors (429 / 5xx)
+/* Marks an error inside the text stream. \u0000 never appears in normal
+   model text; the client splits on it to show a clear message. */
+const ERROR_MARK = '\u0000';
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ROLES = new Set(['user', 'assistant']);
 const SPEND_DAYS = 14;            // this week + last week is enough for the coach
@@ -175,18 +179,58 @@ export async function POST(req) {
   const ious = cleanIous(ctx.ious);
   const now = typeof ctx.now === 'string' && /^\d{1,2}:\d{2}( [AP]M)?$/.test(ctx.now) ? ctx.now : '';
 
+  /* Turn provider failures into a message the user can act on. */
+  function explain(error) {
+    const status = error?.statusCode ?? error?.lastError?.statusCode;
+    const name = error?.name || error?.lastError?.name || '';
+    console.error('[coach] model request failed:', status ?? '', name, error?.message ?? error);
+    if (status === 401 || status === 403) return 'The AI key was rejected — check GROQ_API_KEY.';
+    if (status === 404) return 'The AI model was not found — check COACH_MODEL.';
+    if (status === 413) return 'That conversation is too long for the AI — tap “Clear chat” and ask again.';
+    if (status === 429) return 'The AI is rate-limited right now — try again in a minute.';
+    if (status >= 500) return 'The AI service is busy — try again in a moment.';
+    if (/abort|timeout/i.test(name)) return 'The AI took too long to answer — try again.';
+    return 'Buddy couldn\u2019t answer right now — try again.';
+  }
+
   const result = streamText({
     model: coachModel(),
     system: buildSystemPrompt({ today, days, weeks, streak, programWeek, now, expenses, budget, customCats, loans, ious, plan }),
     messages,
-    maxRetries: 1,
+    maxRetries: MODEL_RETRIES,
     maxOutputTokens: MAX_OUTPUT_TOKENS,
     abortSignal: AbortSignal.any([req.signal, AbortSignal.timeout(MODEL_TIMEOUT_MS)]),
-    onError: ({ error }) => {
-      const status = error?.statusCode ?? error?.lastError?.statusCode;
-      console.error('[coach] model request failed:', status ?? '', error?.message ?? error);
+    onError: () => { /* handled in the stream below */ },
+  });
+
+  /* Stream plain text; on failure append ERROR_MARK + a readable reason
+     so the browser never sees a silent, empty reply. */
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      let sent = false;
+      try {
+        for await (const part of result.fullStream) {
+          if (part.type === 'text-delta' && part.text) {
+            controller.enqueue(encoder.encode(part.text));
+            sent = true;
+          } else if (part.type === 'error') {
+            throw part.error;
+          } else if (part.type === 'finish' && !sent) {
+            const reason = part.finishReason === 'length'
+              ? 'Buddy thought for too long and ran out of space — ask a shorter or more specific question.'
+              : 'Buddy had no answer this time — try rephrasing.';
+            controller.enqueue(encoder.encode(ERROR_MARK + reason));
+          }
+        }
+      } catch (error) {
+        controller.enqueue(encoder.encode(ERROR_MARK + explain(error)));
+      }
+      controller.close();
     },
   });
 
-  return result.toTextStreamResponse({ headers: { 'Cache-Control': 'no-store' } });
+  return new Response(stream, {
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
 }

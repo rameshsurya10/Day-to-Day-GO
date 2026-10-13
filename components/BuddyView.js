@@ -15,6 +15,7 @@ const HISTORY_WEEKS = 4;
 const SPEND_DAYS = 14;
 const SEND_MESSAGES = 20;
 const MAX_INPUT = 2000;
+const ERROR_MARK = '\u0000';   // must match app/api/coach/route.js
 
 /* The logged data Buddy needs, from this browser's store. */
 function buildContext(state, today, now) {
@@ -66,13 +67,16 @@ export default function BuddyView({ state, now, today, appendChat, clearChat, pe
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [state.chat.length, streaming]);
 
-  async function send(text) {
+  /* retry: resend the conversation as-is (the last user message is
+     already in the chat), instead of adding the question again. */
+  async function send(text, { retry = false } = {}) {
     const content = text.trim().slice(0, MAX_INPUT);
     if (!content || busy) return;
     const userMsg = { role: 'user', content, at: new Date().toISOString() };
-    const history = [...state.chat, userMsg].slice(-SEND_MESSAGES).map(({ role, content: c }) => ({ role, content: c }));
+    const convo = retry ? state.chat : [...state.chat, userMsg];
+    const history = convo.slice(-SEND_MESSAGES).map(({ role, content: c }) => ({ role, content: c }));
 
-    appendChat([userMsg]);
+    if (!retry) appendChat([userMsg]);
     setInput('');
     setError('');
     setStreaming('');
@@ -95,10 +99,14 @@ export default function BuddyView({ state, now, today, appendChat, clearChat, pe
         const { done, value } = await reader.read();
         if (done) break;
         reply += decoder.decode(value, { stream: true });
-        setStreaming(reply);
+        setStreaming(reply.split(ERROR_MARK)[0]);
       }
-      if (!reply.trim()) throw new Error('Buddy didn’t answer — check the API key and COACH_MODEL, then try again.');
-      appendChat([{ role: 'assistant', content: reply.trim(), at: new Date().toISOString() }]);
+      // The server appends ERROR_MARK + a readable reason if the AI fails.
+      const [text, serverError] = reply.split(ERROR_MARK);
+      if (text.trim()) appendChat([{ role: 'assistant', content: text.trim(), at: new Date().toISOString() }]);
+      if (serverError !== undefined || !text.trim()) {
+        throw new Error(serverError || 'Buddy couldn’t answer right now — try again.');
+      }
     } catch (e) {
       setError(e instanceof TypeError ? 'Could not reach Buddy. Check your connection.' : e.message);
     } finally {
@@ -132,6 +140,8 @@ export default function BuddyView({ state, now, today, appendChat, clearChat, pe
   }
 
   const empty = state.chat.length === 0 && !busy;
+  const last = state.chat[state.chat.length - 1];
+  const lastUser = last?.role === 'user' ? last : null;   // unanswered question
 
   return (
     <div className="stack chat">
@@ -170,7 +180,16 @@ export default function BuddyView({ state, now, today, appendChat, clearChat, pe
             {streaming ? <RichText text={streaming} /> : <span className="typing" aria-label="Buddy is typing"><i /><i /><i /></span>}
           </div>
         )}
-        {error && <p className="form-error" role="alert">{error}</p>}
+        {error && (
+          <div className="chat-error" role="alert">
+            <p className="form-error">{error}</p>
+            {lastUser && (
+              <button type="button" className="btn btn-soft small-btn" onClick={() => send(lastUser.content, { retry: true })}>
+                <Icon name="refresh" size={16} /> Try again
+              </button>
+            )}
+          </div>
+        )}
         <div ref={endRef} />
       </section>
 
