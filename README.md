@@ -1,109 +1,112 @@
-# DAY//TO//DAY — Operator Console
+# Day to Day
 
-A daily achievement system built around two fixed anchors — **5:30 AM
-trading class** and **9:30 PM trading class** — with an AI coach that
-reads your real logged data.
+A mobile-first personal routine app — daily checklist, timetable, meals,
+spending, loans & EMIs, money owed, reminders and an AI coach — in a light
+glassmorphism UI you can install on your phone (PWA).
 
-It encodes the *anti-break* philosophy: a day is only **BROKEN** when a
-Level 1 (non-negotiable) task is missed. Reduce effort on bad days, never
-remove the habit. The streak survives as long as Level 1 survives.
+**Nothing personal lives in the code.** Your plan (timetable, meals, prices,
+reminders, profile) is data you edit in **Settings** and it is stored in your
+browser. The repo ships only a neutral starter plan.
 
----
+## What's inside
 
-## No database — here's where your data lives
+| Tab | What it does |
+|-----|--------------|
+| **Today** | Progress ring, streak, the block you're in *now*, today's spend vs safe limit, upcoming EMIs/dues, the checklist and the timeline. |
+| **Meals** | Each day's menu item by item, protein/calcium sources, portions, nutrition plan, weekly shopping list & budget, health notes. |
+| **Money** | **Spend** (expenses by category, custom categories, weekly food budget, safe daily limit, this week vs last) · **Loans & EMIs** (due dates, progress, *Mark paid* logs it in Spend) · **Owe** (who owes you / whom you owe, partial payments). |
+| **Buddy** | AI chat (Groq). It sees your plan and logs, and answers any question. |
+| **Review** | Week focus, Mon–Sun cycle calendar with real dates, weekly log, 4-week trend. |
+| **Settings** (gear icon) | Edit every part of the plan; data & backup. |
 
-| Thing | Where it lives |
-|-------|----------------|
-| Your daily task logs, streak, history | **Your browser** (`localStorage`) — on each device |
-| The AI coach key | The server (Vercel) — never sent to the browser |
+**Alerts** (bell): EMIs and money owed (before, on and after the due date),
+budget limits, your timed reminders, meal times, evening checklist/spend nudges,
+weekly log and backup reminders. Phone notifications can be switched on.
 
-There is **no database** anywhere. The server function (`/api/coach`) is a
-pass-through: your browser sends it today's data, it asks the AI, it
-returns Buddy's advice, and it **stores nothing**.
+## Where your data lives — and how to keep it
 
-> Each device keeps its own data (your phone and laptop won't share). The
-> data lives only in the browser it was entered on.
+| Data | Where |
+|------|-------|
+| Plan, checklist, logs, expenses, loans, money owed, chat | This browser's `localStorage` (key `d2d.v3`) |
+| Groq API key, app password | Server environment only |
 
----
+- Clearing the browser **cache** is safe.
+- Clearing **cookies & site data** deletes your data. The app asks the browser
+  for *persistent storage*, and **Settings → Data & backup** lets you download a
+  backup file and import it on any device. A reminder appears if you haven't
+  backed up for 7 days.
+- On iPhone, install the app to the home screen so Safari doesn't clear it
+  after 7 days without use.
 
-## What it's made of
+## First run with your own plan
 
-```
-app/
-  layout.js            root layout + fonts
-  page.js              home — renders the console
-  globals.css          the "operator console" theme
-  login/page.js        password screen
-  api/login            password -> session cookie
-  api/logout           clear session
-  api/coach            POST -> run the AI coach (stateless, no storage)
-components/Console.js  the main UI — data in localStorage
-lib/tasks.js           task config + scoring engine
-lib/auth.js            session token helpers
-lib/coach.js           "Buddy" persona + prompt builder
-middleware.js          the password gate
-public/day-to-day.ics  the calendar file
-legacy/standalone.html the original offline version (no server at all)
-```
+1. Open the app → **Settings → Data & backup → Import backup or plan file**.
+2. Choose your plan file (e.g. `my-plan.private.json`). Files matching
+   `*.private.json` and `day-to-day-backup-*.json` are git-ignored.
 
----
+## Deploy to Vercel
 
-## Deploy to Vercel — only 2 settings
+1. Push to GitHub (check `git status` shows no `.env` or `*.private.json`).
+2. [vercel.com/new](https://vercel.com/new) → import the repo (Next.js is auto-detected).
+3. **Settings → Environment Variables** — add:
 
-### 1. Put the code on GitHub
-Create a GitHub repo and push this folder to it.
+   | Key | Required | Notes |
+   |-----|----------|-------|
+   | `APP_PASSWORD` | yes | 12+ characters. |
+   | `AUTH_SECRET` | yes | ≥ 32 chars — `openssl rand -hex 32`. |
+   | `GROQ_API_KEY` | for the coach | console.groq.com/keys |
+   | `GROQ_BASE_URL` | no | Defaults to Groq. |
+   | `COACH_MODEL` | for the coach | e.g. `openai/gpt-oss-120b` |
+   | `SESSION_DAYS`, `LOGIN_MAX_ATTEMPTS`, `LOGIN_WINDOW_MINUTES`, `COACH_MAX_REQUESTS` | no | Tuning. |
 
-### 2. Import to Vercel
-Go to [vercel.com/new](https://vercel.com/new) and import the repo.
-Vercel auto-detects Next.js — leave all build settings as-is.
+4. Deploy, open the URL on your phone, log in, import your plan, and
+   **Install** the app. Every `git push` redeploys automatically.
 
-### 3. Set two environment variables
-Vercel project → **Settings → Environment Variables**:
+If `APP_PASSWORD` or `AUTH_SECRET` is missing, login is refused (the app fails
+closed — there are no fallback secrets).
 
-| Key | Value |
-|-----|-------|
-| `APP_PASSWORD` | The password you log in with. |
-| `AUTH_SECRET` | A long random string — `openssl rand -hex 32`. |
+## Security
 
-That's it — no database URL, no connection string. The AI Gateway is
-provided automatically by Vercel. (`COACH_MODEL` is optional and defaults
-to `anthropic/claude-sonnet-4-6`.)
-
-### 4. Deploy
-You get a live URL. Open it, log in, start logging your day.
-**Phone:** open the URL on your phone → *Add to Home Screen*.
-
----
+- HMAC-signed session cookie (`httpOnly`, `secure` in production, `sameSite=lax`).
+- Login rate-limited per IP; coach rate-limited per IP.
+- Security headers: CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, referrer and permissions policies.
+- Every plan, backup and API payload is validated and size-limited.
+- Rate limits are per server instance; for heavier traffic use a shared store
+  (e.g. Upstash Redis from the Vercel Marketplace).
 
 ## Local development
 
 ```bash
-cp .env.example .env.local      # fill in the values
+cp .env.example .env.local   # fill in APP_PASSWORD and AUTH_SECRET
 npm install
-npm run dev                     # http://localhost:3000
+npm run dev                  # http://localhost:3000
 ```
 
-For the AI coach to work locally, set `AI_GATEWAY_API_KEY` in `.env.local`.
+Restart `npm run dev` after editing env files. Offline caching runs only in
+production builds, so dev always shows fresh code.
 
----
+## Project layout
 
-## Tuning it to you
-
-- **Scoring** — `lib/tasks.js`, the `TASKS` config. Each task has a weight
-  (`w`). Defaults: Level 1 = 60 pts, Level 2 = +30, Level 3 = +10.
-- **The AI coach's voice** — `lib/coach.js`, the `COACH_PERSONA` constant.
-  This single string defines how blunt, warm, or detailed "Buddy" is.
-
----
-
-## The rules (don't break these)
-
-- Never skip 2 days in a row.
-- Reduce effort, never remove the habit.
-- Bad day = clear Level 1 only. The streak still survives.
-- Protect sleep like an asset. No scrolling after 10 PM.
-- No "I'll compensate tomorrow" mindset.
-
-## Offline version
-`legacy/standalone.html` is the original single file — no server, no login,
-no AI. Open it in any browser and it works. Keep it as an offline backup.
+```
+app/
+  layout.js  page.js  globals.css  manifest.js
+  login/page.js                 password screen
+  api/login, api/logout         session cookie (rate-limited)
+  api/coach                     streams Buddy's reply (Groq), stateless
+components/
+  AppShell.js                   header, tabs (URL hash), bottom nav, alerts
+  TodayView  MealsView  MoneyView (SpendView, LoansView, OweView)
+  BuddyView  ReviewView  HealthView  AlertsPanel  SettingsView
+  settings/ListEditor.js        generic list editor
+  settings/PlanSections.js      one editor per plan section
+  useRoutineStore.js            localStorage state, backup/import
+  usePwa.js                     service worker, notifications, install
+lib/
+  constants.js                  app mechanics (limits, categories) — nothing personal
+  planTemplate.js               neutral starter plan
+  plan.js                       plan validation (normalizePlan)
+  tracker.js  food.js  spend.js  money.js  alerts.js  coach.js
+  ai.js  auth.js  rateLimit.js
+middleware.js                   password gate (fails closed)
+public/sw.js  public/icons/     PWA offline cache + icons
+```

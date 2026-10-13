@@ -7,6 +7,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [show, setShow] = useState(false);
   const router = useRouter();
 
   async function submit(e) {
@@ -34,23 +35,40 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="login-wrap">
-      <form className="login-card" onSubmit={submit}>
-        <div className="login-brand">DAY<b>//</b>TO<b>//</b>DAY</div>
-        <div className="login-tag">OPERATOR CONSOLE — RESTRICTED ACCESS</div>
-        <input
-          type="password"
-          className="login-input"
-          placeholder="ENTER PASSWORD"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          autoFocus
-          required
-        />
-        <button className="login-btn" type="submit" disabled={busy}>
-          {busy ? 'VERIFYING…' : 'UNLOCK CONSOLE'}
+    <main className="app login-wrap">
+      <div className="bg-blobs" aria-hidden="true"><i /><i /><i /></div>
+      <form className="glass login-card" onSubmit={submit}>
+        <p className="eyebrow">Day to Day</p>
+        <h1>Welcome back</h1>
+        <p className="muted">Sleep, study, gym, food — one day at a time.</p>
+        <div className="field">
+          <label className="field-label" htmlFor="password">Password</label>
+          <span className="pw-wrap">
+            <input
+              id="password"
+              type={show ? 'text' : 'password'}
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'login-error' : undefined}
+              autoFocus
+              required
+            />
+            <button
+              type="button"
+              className="pw-toggle"
+              onClick={() => setShow((v) => !v)}
+              aria-label={show ? 'Hide password' : 'Show password'}
+            >
+              {show ? 'Hide' : 'Show'}
+            </button>
+          </span>
+        </div>
+        {error && <p className="form-error" id="login-error" role="alert">{error}</p>}
+        <button className="btn btn-primary" type="submit" disabled={busy}>
+          {busy ? 'Checking…' : 'Unlock'}
         </button>
-        {error && <div className="login-error">{error}</div>}
       </form>
     </main>
   );

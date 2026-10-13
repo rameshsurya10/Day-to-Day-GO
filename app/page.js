@@ -1,7 +1,7 @@
-import Console from '@/components/Console';
+import AppShell from '@/components/AppShell';
 
-/* The home route. The Console is a client component because it owns
-   live state (clock, task toggles, coach calls). */
+/* The home route. AppShell is a client component because it owns live
+   state (clock, checklist, weekly log, coach calls). */
 export default function Page() {
-  return <Console />;
+  return <AppShell />;
 }

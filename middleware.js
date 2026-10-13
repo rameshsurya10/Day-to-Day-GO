@@ -1,14 +1,16 @@
 /* =================================================================
    middleware.js — the password gate.
    Runs before every request. Unauthenticated page requests are sent
-   to /login; unauthenticated API requests get a 401.
+   to /login; unauthenticated API requests get a 401. If AUTH_SECRET
+   or APP_PASSWORD is missing, no session can be valid (fail closed).
    ================================================================= */
 
 import { NextResponse } from 'next/server';
 import { SESSION_COOKIE, sessionToken, safeEqual } from '@/lib/auth';
 
-// Paths reachable without a session.
-const PUBLIC = ['/login', '/api/login', '/day-to-day.ics', '/favicon.ico'];
+// Paths reachable without a session (the PWA manifest and icons are
+// fetched by the browser without cookies).
+const PUBLIC = ['/login', '/api/login', '/favicon.ico', '/sw.js', '/manifest.webmanifest', '/icons', '/icon.svg'];
 
 export async function middleware(req) {
   const { pathname } = req.nextUrl;
