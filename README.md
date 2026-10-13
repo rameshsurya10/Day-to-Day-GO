@@ -1,112 +1,114 @@
-# Day to Day
+<p align="center">
+  <img src="public/icons/icon-192.png" alt="Day to Day logo" width="96" height="96">
+</p>
 
-A mobile-first personal routine app — daily checklist, timetable, meals,
-spending, loans & EMIs, money owed, reminders and an AI coach — in a light
-glassmorphism UI you can install on your phone (PWA).
+<h1 align="center">Day to Day</h1>
 
-**Nothing personal lives in the code.** Your plan (timetable, meals, prices,
-reminders, profile) is data you edit in **Settings** and it is stored in your
-browser. The repo ships only a neutral starter plan.
+<p align="center"><b>Your day, your meals, your money — one simple app on your phone.</b></p>
 
-## What's inside
+---
 
-| Tab | What it does |
-|-----|--------------|
-| **Today** | Progress ring, streak, the block you're in *now*, today's spend vs safe limit, upcoming EMIs/dues, the checklist and the timeline. |
-| **Meals** | Each day's menu item by item, protein/calcium sources, portions, nutrition plan, weekly shopping list & budget, health notes. |
-| **Money** | **Spend** (expenses by category, custom categories, weekly food budget, safe daily limit, this week vs last) · **Loans & EMIs** (due dates, progress, *Mark paid* logs it in Spend) · **Owe** (who owes you / whom you owe, partial payments). |
-| **Buddy** | AI chat (Groq). It sees your plan and logs, and answers any question. |
-| **Review** | Week focus, Mon–Sun cycle calendar with real dates, weekly log, 4-week trend. |
-| **Settings** (gear icon) | Edit every part of the plan; data & backup. |
+Day to Day helps you keep a steady routine without needing a perfect one.
+Plan your day, tick off what you did, follow your meal plan, keep an eye on
+spending, never miss an EMI, and ask a friendly AI coach whenever you're stuck.
 
-**Alerts** (bell): EMIs and money owed (before, on and after the due date),
-budget limits, your timed reminders, meal times, evening checklist/spend nudges,
-weekly log and backup reminders. Phone notifications can be switched on.
+It's built for real, busy days: a "good day" is one where you did *most* of
+your habits, not all of them. Miss something? Do a smaller version and keep the
+streak going.
 
-## Where your data lives — and how to keep it
+## What you can do
 
-| Data | Where |
-|------|-------|
-| Plan, checklist, logs, expenses, loans, money owed, chat | This browser's `localStorage` (key `d2d.v3`) |
-| Groq API key, app password | Server environment only |
+### Plan and track your day
+- See your **daily timetable**, with the part you're in *right now* highlighted
+  and how much time is left.
+- Tick off your **daily checklist** (sleep, study, food, work, exercise,
+  recovery, or whatever you choose). Sunday gets its own lighter list.
+- Build a **streak** of good days and see your progress on a **4-week
+  calendar**.
+- Fill in a short **weekly log** (weight, waist, training, study, how you feel)
+  and watch the trend.
 
-- Clearing the browser **cache** is safe.
-- Clearing **cookies & site data** deletes your data. The app asks the browser
-  for *persistent storage*, and **Settings → Data & backup** lets you download a
-  backup file and import it on any device. A reminder appears if you haven't
-  backed up for 7 days.
-- On iPhone, install the app to the home screen so Safari doesn't clear it
-  after 7 days without use.
+### Follow your meal plan
+- See **today's meals** item by item, with amounts, at the right times.
+- Foods that give **protein** or **calcium** are labelled, so you know you're
+  getting enough.
+- Keep your **weekly shopping list** with expected prices and a budget.
+- Notes on portions, what to add when you're still hungry, and health tips.
 
-## First run with your own plan
+### Stay on top of money
+- **Log every expense** in seconds: groceries, eating out, tea and snacks,
+  travel, or your own categories like Rent or Bills.
+- Set a **weekly food budget** and see what's left, plus a **safe amount to
+  spend per day**.
+- Compare **this week with last week** to see where the money goes.
+- Track **loans and EMIs**: due dates, how many are paid, how much is left.
+  Tap *Mark paid* and it's added to your spending automatically.
+- Track **money owed**: who owes you and whom you owe, with due dates and
+  part-payments.
 
-1. Open the app → **Settings → Data & backup → Import backup or plan file**.
-2. Choose your plan file (e.g. `my-plan.private.json`). Files matching
-   `*.private.json` and `day-to-day-backup-*.json` are git-ignored.
+### Get reminders
+Tap the **bell** to see everything that needs you:
+- EMIs and payments coming up, due today or overdue
+- Going over your food budget
+- Your own reminders (study time, gym, bedtime…)
+- Meal times, with what's on the menu
+- An evening nudge if your checklist isn't done yet
 
-## Deploy to Vercel
+Turn on **phone notifications** to get them as pop-ups.
 
-1. Push to GitHub (check `git status` shows no `.env` or `*.private.json`).
-2. [vercel.com/new](https://vercel.com/new) → import the repo (Next.js is auto-detected).
-3. **Settings → Environment Variables** — add:
+### Ask Buddy, your AI coach
+Chat with Buddy about anything: "I skipped breakfast, what now?", "How do I
+spend less this week?", "Explain today's meals", "Which EMI should I pay
+first?". Buddy knows your plan and what you've logged, so the answers are about
+*you*, not generic advice.
 
-   | Key | Required | Notes |
-   |-----|----------|-------|
-   | `APP_PASSWORD` | yes | 12+ characters. |
-   | `AUTH_SECRET` | yes | ≥ 32 chars — `openssl rand -hex 32`. |
-   | `GROQ_API_KEY` | for the coach | console.groq.com/keys |
-   | `GROQ_BASE_URL` | no | Defaults to Groq. |
-   | `COACH_MODEL` | for the coach | e.g. `openai/gpt-oss-120b` |
-   | `SESSION_DAYS`, `LOGIN_MAX_ATTEMPTS`, `LOGIN_WINDOW_MINUTES`, `COACH_MAX_REQUESTS` | no | Tuning. |
+### Make it yours
+Everything is editable in **Settings** (the gear icon): your name, timetable,
+checklist, meals and menu, shopping prices, health notes, reminders and budget.
+New users start with a simple example plan they can change.
 
-4. Deploy, open the URL on your phone, log in, import your plan, and
-   **Install** the app. Every `git push` redeploys automatically.
+## Install it on your phone
 
-If `APP_PASSWORD` or `AUTH_SECRET` is missing, login is refused (the app fails
-closed — there are no fallback secrets).
+**Android (Chrome):** open the app link → tap **Install** on the Today screen
+(or Chrome menu ⋮ → *Install app*).
 
-## Security
+**iPhone (Safari):** open the app link → tap **Share** → **Add to Home Screen**.
 
-- HMAC-signed session cookie (`httpOnly`, `secure` in production, `sameSite=lax`).
-- Login rate-limited per IP; coach rate-limited per IP.
-- Security headers: CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, referrer and permissions policies.
-- Every plan, backup and API payload is validated and size-limited.
-- Rate limits are per server instance; for heavier traffic use a shared store
-  (e.g. Upstash Redis from the Vercel Marketplace).
+It then opens full-screen like a normal app, works **offline** (Buddy needs
+internet), and has shortcuts. Long-press the icon for *Add spending*, *Ask
+Buddy* and *Today's meals*.
 
-## Local development
+## Your data and privacy
 
-```bash
-cp .env.example .env.local   # fill in APP_PASSWORD and AUTH_SECRET
-npm install
-npm run dev                  # http://localhost:3000
-```
+- Your plan and everything you log are **saved automatically on your own
+  phone**, in the app's storage. Nothing to set up, no account needed.
+- Your personal data is **not stored on any server**. The only thing sent out
+  is what Buddy needs to answer a question you ask.
+- The app is protected by a **password**.
 
-Restart `npm run dev` after editing env files. Offline caching runs only in
-production builds, so dev always shows fresh code.
+### Keep a backup
+Because your data lives on your phone, keep a copy somewhere safe:
 
-## Project layout
+1. Go to **Settings → Data & backup → Download full backup**.
+2. Save the file to Google Drive or email it to yourself.
+3. To restore, on a new phone or after clearing data, use **Import backup**.
 
-```
-app/
-  layout.js  page.js  globals.css  manifest.js
-  login/page.js                 password screen
-  api/login, api/logout         session cookie (rate-limited)
-  api/coach                     streams Buddy's reply (Groq), stateless
-components/
-  AppShell.js                   header, tabs (URL hash), bottom nav, alerts
-  TodayView  MealsView  MoneyView (SpendView, LoansView, OweView)
-  BuddyView  ReviewView  HealthView  AlertsPanel  SettingsView
-  settings/ListEditor.js        generic list editor
-  settings/PlanSections.js      one editor per plan section
-  useRoutineStore.js            localStorage state, backup/import
-  usePwa.js                     service worker, notifications, install
-lib/
-  constants.js                  app mechanics (limits, categories) — nothing personal
-  planTemplate.js               neutral starter plan
-  plan.js                       plan validation (normalizePlan)
-  tracker.js  food.js  spend.js  money.js  alerts.js  coach.js
-  ai.js  auth.js  rateLimit.js
-middleware.js                   password gate (fails closed)
-public/sw.js  public/icons/     PWA offline cache + icons
-```
+The app reminds you to back up every 7 days.
+
+> **Good to know:** clearing your browser's *cache* is safe. Clearing
+> *cookies & site data* (or uninstalling the browser) deletes your data, which
+> is what the backup is for. On iPhone, use the installed app icon, not a
+> Safari tab, so your data stays put.
+
+## Quick tips
+
+- A day counts as **kept** when you finish most of your checklist. Aim for
+  consistency, not perfection.
+- On a hard day, **shrink the habit, don't skip it**.
+- Tap **Ask Buddy** buttons on the Meals and Money screens to get help with
+  exactly what you're looking at.
+
+---
+
+**Setting up or hosting the app yourself?** See the
+[developer guide](DEVELOPMENT.md).
